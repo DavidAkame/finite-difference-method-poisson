@@ -1,0 +1,102 @@
+#python code#
+import numpy as np
+from scipy.sparse import spdiags
+from scipy.linalg import solve
+def TWO_D():
+print('We have to solve Poisson’s equation in 2D','\n','-Δu=f(x,y) in Ω∶= (a,b)x(c,d)','\n','u= φ(x,y) on ∂Ω')
+print('What is your left end point- a on the x axis')
+a = int(input())
+print('What is your right end point- b on the x axis')
+b = int(input())
+print('What is the down end point- c on the y axis')
+c = int(input())
+print('What is your upper right end point- d on the y axis')
+d = int(input())
+print('So, now into how many subintervals- n do you wish to partition both axes')
+n = int(input())
+h = 1/n
+def phi(x,y):
+return 0
+def f(x,y):
+return 2*((x+y)- (x**2+y**2))
+def U(x,y):
+return x*y*(x-1)*(y-1)
+if n<1:
+return print('Give a positive value for n','\n','TWO_D()')
+elif n==1:
+return print(' u(',a,',',c,')=',phi(a,c),' u(',b,',',c,')=',phi(b,c),'
+u(',a,',',d,')=',phi(a,d),' u(',b,',',d,')=',phi(b,d))
+elif n==2:
+return print(' u(',a,',',c,')=',phi(a,c),' u(',b,',',c,')=',phi(b,c),' u(',a,',',d,')=',phi(a,d),' u(',b,',',d,')=',phi(b,d),' u(',(a+1)/2,',',c,')=',phi((a+1)/2,c),' u(',(a+1)/2,',',d,')=',phi((a+1)/2,d),' u(',a,',',(c+1)/2,')=',phi(a,(c+1)/2),' u(',b,',',(c+1)/2,')=',phi(b,(c+1)/2),' u(',(a+1)/2,',',(c+1)/2,')=',0.25*(h**2*f((a+1)/2,(c+1)/2) + phi(a,(c+1)/2) + phi(b,(c+1)/2) + phi((a+1)/2,c) + phi((a+1)/2,d)))
+else:
+xi = np.linspace(a,b,n+1) #no of x_grid points
+yi = np.linspace(c,d,n+1) #no of y_grid points
+u = np.zeros((n+1,n+1)) #initialise u on square grid
+for s in ([0,n]):
+for t in range(n+1):
+u[s,t] = phi(xi[t],yi[s])
+for t in range(1,n):
+u[t,s] = phi(xi[s],yi[t])
+P = np.arange((n-1)**2).reshape((n-1,n-1)) #The numbering of interior points assigned to the u memory
+for s in range(1,n):
+for t in range(1,n):
+u[s,t] = P[s-1,t-1]
+del(P) #then deleted
+def Interior(s,t):
+return print(int(u[s+1,t+1] + 1),'u(',xi[t+1],',',yi[s+1],') = ',solution[s,t],' exact U = ',U(xi[t+1],yi[s+1]),'error',abs(solution[s,t]-U(xi[t+1],yi[s+1])))
+def Boundary_1(s,t):
+return print('u(',xi[t],',',yi[s],') = ',u[s,t])
+def Boundary_2(s,t):
+return print('u(',xi[s],',',yi[t],') = ',u[t,s])
+def stencil(n):
+stencil = np.matrix((np.zeros((n-1)*5).reshape((n-1),5)))
+stencil[0] = (-1,-1,4,0,-1)
+stencil[n-2] = (-1,0,4,-1,-1)
+if n>3:
+stencil[1:n-2] = (-1,-1,4,-1,-1)
+return stencil
+else:
+return stencil
+def rhs(n):
+rhs = np.zeros((n-1,n-1))
+for p in range(n-1):
+if p == 0:
+rhs[p,0] = h**2*f(xi[1],yi[1]) + phi(xi[1],yi[0]) + phi(xi[0],yi[1])
+for m in range(2,n-1) :
+rhs[p,m-1] = h**2*f(xi[m],yi[1]) + phi(xi[m],yi[0])
+rhs[p,n-2] = h**2*f(xi[n-1],yi[1]) + phi(xi[n-1],yi[0]) + phi(xi[n],yi[1])
+elif (1<=p<=n-3):
+rhs[p,0] = h**2*f(xi[1],yi[p+1]) + phi(xi[0],yi[p+1])
+for m in range(2,n-1):
+rhs[p,m-1] = h**2*f(xi[m],yi[p+1])
+rhs[p,n-2] = h**2*f(xi[n-1],yi[p+1]) + phi(xi[n],yi[p+1])
+else:
+rhs[p,0] = h**2*f(xi[1],yi[n-1]) + phi(xi[0],yi[n-1]) +
+phi(xi[1],yi[n])
+for m in range(2,n-1):
+rhs[p,m-1] = h**2*f(xi[m],yi[n-1]) + phi(xi[m],yi[n])
+rhs[p,n-2] = h**2*f(xi[n-1],yi[n-1]) + phi(xi[n-1],yi[n]) + phi(xi[n],yi[n-1])
+return rhs.ravel()
+def mat(n):
+diags = np.array((-(n-1),-1,0,1,(n-1)))
+bands = np.tile(stencil(n),(n-1,1)).T
+A = spdiags(bands,diags,(n-1)**2,(n-1)**2).todense()
+return A
+print('We have to solve')
+print('A = ','\n',mat(n))
+print('for values of u with right hand side as')
+print('b = ',rhs(n))
+print('this gives us')
+solution = np.zeros((1,(n-1)**2))
+solution = solve(mat(n),rhs(n))
+solution = solution.reshape((n-1,n-1))
+print('According to the Lexicographic numbering')
+for s in range(n-1):
+for t in range(n-1):
+Interior(s,t)
+print('The Boundary points are')
+for s in ([0,n]):
+for t in range(n+1):
+Boundary_1(s,t)
+for t in range(1,n):
+Boundary_2(s,t)
