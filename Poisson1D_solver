@@ -1,0 +1,38 @@
+#python code#
+import sys
+import numpy as np
+from scipy.sparse import spdiags
+from scipy.linalg import solve
+def One_D_finite_difference_solver(n , a, b, phi_a,phi_b):
+	h = 1/n                                   #grid spacing
+	xi = np.linspace(a,b,n+1)                 #no of grid points
+	mi = np.linspace((a+1)/n,(a+n-1)/n,n-1)   #no  of mid points
+	u = np.zeros(n+1)                         #initialize u
+	def f(x):                                 # get f's definition
+		return -x**2
+	def align(k):
+		print('\n','u(',xi[k],')  = ',u[k],'\n')
+	if n<1:
+		return print('give a positive value for n')
+	elif n==1:
+		return print('u(0)= ' ,phi_a,',u(1) = ',phi_b)                     #no midpoint to calculate we return known values
+	elif n==2:
+		return print('u(0)= ' ,phi_a,',u(1) = ',0.5*(u[2] + u[0] - h**2*f(xi[1])),',u(2) = ',phi_b)  #we calculate the midpoint using the approximation
+	else:
+		u[0] = phi_a                              #boundary data
+		u[n] = phi_b
+		rhs = h**2*f(mi)                          #R.H.S of derived linear sys
+		rhs[0] = h**2*f(mi[0]) + u[0]
+		rhs[n-2] = h**2*f(mi[n-2]) + u[n]
+		stencil = np.array((-1,2,-1))                #what i use in tiling the sparse matrix to come
+		diags = range(-1,2)                          #i will tile diagonal -1,main diagonal 0 and upper diagonal 1, range(-1,2) = -1,0,1
+		bands = np.tile(stencil,(n-1,1)).T           #the horizontal bands to use on chosen-diagonals(diags) of the sparse matrix A to come
+		A = spdiags(bands,diags,n-1,n-1).todense()   #matrix of derived linear system for second derivative approximation
+		print('We  have to solve')
+		print(A)
+		print('for values of u with right hand side')
+		print(rhs.T)
+		print('this gives us')
+		u[1:n] = solve(A,rhs)
+		for k in range(n+1):
+			align(k)
